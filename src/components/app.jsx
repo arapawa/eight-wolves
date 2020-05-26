@@ -83,12 +83,11 @@ function App() {
     var reader = new FileReader();
     reader.onload = function() {
       // Do something with the data
-      var clientsJson = csvToJson(reader.result)[0];
+      var clientsJson = csvToJson(reader.result);
       console.log(clientsJson);
 
       // TODO: parse the clients csv and update state
 
-      // TODO: fix issue where it only parses first row in csv
 
     };
     // start reading the file. When it is done, calls the onload event defined above.
@@ -270,7 +269,7 @@ function App() {
     } else {
       activityType = activityText;
     }
-    
+
     let amountUnit = 'times';
     switch (enableDeviceTracking) {
       case 1:
@@ -352,7 +351,7 @@ function App() {
           'Name': '', // let's hope this is optional since How would we know the Subgroup Name?
           'IsImplicit': field1 ? true : false, // not sure what this does. Seems to be true for tags and false for subgroups.
           'IsPHI': false,
-          'Tags': 
+          'Tags':
             field1 ? makeTags() : null
         }
       ] : [], // if no targeting, use an empty array
