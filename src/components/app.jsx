@@ -14,7 +14,8 @@ function clientsReducer(state, action) {
 
 /* globals $ */
 function App() {
-  const [selectedClient, setSelectedClient] = useState(null);
+  // for single-client-select
+  // const [selectedClient, setSelectedClient] = useState(null);
   const [activities, setActivities] = useState([]);
 
   const [startDate, setStartDate] = useState('2020-05-22');
@@ -55,7 +56,8 @@ function App() {
   const [field3, setField3] = useState(null);
   const [field3Value, setField3Value] = useState(null);
 
-
+  // clients csv state
+  const [clientsFromCsv, setClientsFromCsv] = useState(null);
 
   const [clients, dispatch] = React.useReducer(
     clientsReducer,
@@ -79,19 +81,55 @@ function App() {
   }, []); // Pass empty array to only run once on mount
 
   function handleClientsCsvFiles(e) {
-    console.log(e);
-    var reader = new FileReader();
+    let reader = new FileReader();
     reader.onload = function() {
-      // Do something with the data
-      var clientsJson = csvToJson(reader.result);
-      console.log(clientsJson);
-
-      // TODO: parse the clients csv and update state
-
-
+      // Parse the client csv and update state
+      const clientsJson = csvToJson(reader.result);
+      setClientsFromCsv(clientsJson);
     };
-    // start reading the file. When it is done, calls the onload event defined above.
-    reader.readAsBinaryString(document.querySelector('#csv-clients-input').files[0]);
+    // Start reading the file. When it is done, calls the onload event defined above.
+    reader.readAsBinaryString(e.target.files[0]);
+  }
+
+  function renderClients() {
+    const accountNamesList = clientsFromCsv.map(client => client['Account']);
+
+    // Filter clients by the list of account names in the user uploaded CSV
+    const filteredClients = clients.filter(client => {
+      return accountNamesList.includes(client.fields['Salesforce Name']);
+    });
+
+    const sortedClients = [...filteredClients];
+
+    sortedClients.sort((a, b) => {
+      // TODO: figure out why clients csv import is failing
+      const nameA = a.fields['Salesforce Name'].toLowerCase();
+      const nameB = b.fields['Salesforce Name'].toLowerCase();
+      if (nameA < nameB) {
+        return -1;
+      }
+      if (nameA > nameB) {
+        return 1;
+      }
+      return 0;
+    });
+
+    return sortedClients.map((client) => {
+      const employerName = client.fields['Limeade e='];
+
+      return (
+        <tr id={employerName.replace(/\s*/g, '')} key={employerName}>
+          <td>
+            <a href={client.fields['Domain'] + '/ControlPanel/RoleAdmin/ViewChallenges.aspx?type=employer'} target="_blank">{client.fields['Salesforce Name']}</a>
+          </td>
+          <td className="challenge-id"></td>
+          <td>
+            <button type="button" className="btn btn-primary" onClick={() => uploadChallenge(client)}>Upload</button>
+          </td>
+        </tr>
+      );
+    });
+
   }
 
   function handleChallengesCsvFiles(e) {
@@ -223,35 +261,35 @@ function App() {
     return sanitized;
   }
 
-  function massUpload() {
-    // Open the modal
-    $('#uploadModal').modal();
+  // probably no longer needed
+  // function massUpload() {
+  //   // Open the modal
+  //   $('#uploadModal').modal();
 
-    let timer = 0;
+  //   let timer = 0;
 
-    // Upload to app clients
-    const filteredClients = clients.filter(client => {
-      //return client.fields['Has App'] === 'Yes';
-      return client.fields['Has App'] === 'Yes' && client.fields['Uploaded'] !== '1';
-    });
+  //   // Upload to app clients
+  //   const filteredClients = clients.filter(client => {
+  //     //return client.fields['Has App'] === 'Yes';
+  //     return client.fields['Has App'] === 'Yes' && client.fields['Uploaded'] !== '1';
+  //   });
 
-    // Set counter based on filteredClients
-    $('#counter').html(`<p><span id="finishedUploads">0</span> / ${filteredClients.length}</p>`);
+  //   // Set counter based on filteredClients
+  //   $('#counter').html(`<p><span id="finishedUploads">0</span> / ${filteredClients.length}</p>`);
 
-    filteredClients.map(client => {
-      // 4 seconds between ajax requests, because limeade is bad and returns 500 errors if we go too fast
-      // These requests average about 2.6-3.4 seconds but we've seen limeade take up to 4.4s, either way this
-      // guarantees concurrent calls will be rare, which seem to be the source of our woes
-      timer += 4000;
-      setTimeout(() => {
-        uploadChallenge(client);
-      }, timer);
-    });
-  }
+  //   filteredClients.map(client => {
+  //     // 4 seconds between ajax requests, because limeade is bad and returns 500 errors if we go too fast
+  //     // These requests average about 2.6-3.4 seconds but we've seen limeade take up to 4.4s, either way this
+  //     // guarantees concurrent calls will be rare, which seem to be the source of our woes
+  //     timer += 4000;
+  //     setTimeout(() => {
+  //       uploadChallenge(client);
+  //     }, timer);
+  //   });
+  // }
 
   function uploadChallenge(client) {
-    // Open the modal
-    $('#uploadModal').modal();
+    const employerName = client.fields['Limeade e='];
 
     let frequency = '';
     if (enableDeviceTracking === 1) {
@@ -369,40 +407,28 @@ function App() {
       contentType: 'application/json; charset=utf-8'
     }).done((result) => {
 
-      // Advance the counter
-      let count = Number($('#finishedUploads').html());
-      $('#finishedUploads').html(count + 1);
+      // Change row to green on success
+      $('#' + employerName.replace(/\s*/g, '')).addClass('bg-success text-white');
+      $('#' + employerName.replace(/\s*/g, '') + ' .challenge-id').html(`<a href="${client.fields['Domain']}/admin/program-designer/activities/activity/${result.Data.ChallengeId}" target="_blank">${result.Data.ChallengeId}</a>`);
 
-      $('#uploadModal .modal-body').append(`
-        <div className="alert alert-success" role="alert">
-          <p>Uploaded Tile for <a href="${client.fields['Domain']}/ControlPanel/RoleAdmin/ViewChallenges.aspx?type=employer" target="_blank"><strong>${client.fields['Account Name']}</strong></a></p>
-          <p className="mb-0"><strong>Challenge Id</strong></p>
-        <p><a href="${client.fields['Domain']}/admin/program-designer/activities/activity/${result.Data.ChallengeId}" target="_blank">${result.Data.ChallengeId}</a></p>
-        </div>
-      `);
 
     }).fail((xhr, request, status, error) => {
-      console.error(xhr.responseText);
+      $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
       console.error(request.status);
       console.error(request.responseText);
       console.log('Create challenge failed for client ' + client.fields['Limeade e=']);
-      $('#uploadModal .modal-body').html(`
-          <div class="alert alert-danger" role="alert">
-            <p>Error uploading ${title} for <strong>${client.fields['Account Name']}</strong></p>
-            <p>${xhr.responseText}</p>
-          </div>
-        `);
     });
 
   }
 
-  function selectClient(e) {
-    clients.forEach((client) => {
-      if (client.fields['Limeade e='] === e.target.value) {
-        setSelectedClient(client);
-      }
-    });
-  }
+  // for single-client-select
+  // function selectClient(e) {
+  //   clients.forEach((client) => {
+  //     if (client.fields['Limeade e='] === e.target.value) {
+  //       setSelectedClient(client);
+  //     }
+  //   });
+  // }
 
   function renderEmployerNames() {
     const sortedClients = [...clients];
@@ -431,20 +457,31 @@ function App() {
       <div className="row mb-1">
         <div className="col text-left">
           <h3>Clients</h3>
-          <label htmlFor="employerName">EmployerName</label>
+          {/* For single-client-select */}
+          {/* <label htmlFor="employerName">EmployerName</label>
           <select id="employerName" className="form-control custom-select" onChange={selectClient}>
             <option defaultValue>Select Employer</option>
             {renderEmployerNames()}
-          </select>
+          </select> */}
         </div>
       </div>
-      <div className="row">
-        <div className="col text-left">
-          <p id="csv-clients-import" type="file" name="Import">or Import from CSV</p>
-          <input type="file" id="csv-clients-input" accept="*.csv" onChange={(e) => handleClientsCsvFiles(e)} />
-          <small className="form-text text-muted text-left">Note: file matches on Salesforce Name in Clients Most up to Date.</small>
-        </div>
+      <div className="form-group">
+        <label htmlFor="csvClientsInput">Import from CSV</label>
+        <input type="file" className="form-control-file" id="csvClientsInput" accept="*.csv" onChange={(e) => handleClientsCsvFiles(e)} />
+        <small className="form-text text-muted text-left">Note: file matches on Salesforce Name in Clients Most up to Date. Column in .csv is Account.</small>
       </div>
+      <table className="table table-hover table-striped" id="activities">
+        <thead>
+          <tr>
+            <th scope="col">Salesforce Name</th>
+            <th scope="col">Challenge Id</th>
+            <th scope="col">Upload</th>
+          </tr>
+        </thead>
+        <tbody>
+          {clientsFromCsv ? renderClients() : <tr />}
+        </tbody>
+      </table>
 
       <div className="row mb-1">
         <div className="col text-left">
@@ -460,10 +497,11 @@ function App() {
       </div>
 
       <div className="row">
-        <div className="col text-left">
+        {/* For single-client-select */}
+        {/* <div className="col text-left">
           <button type="button" className="btn btn-primary" id="uploadButton" onClick={() => uploadChallenge(selectedClient)}>Single Upload</button>
           <img id="spinner" src="images/spinner.svg" />
-        </div>
+        </div> */}
       </div>
 
       <Footer />
