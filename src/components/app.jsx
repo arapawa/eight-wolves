@@ -3,6 +3,7 @@ import moment from 'moment';
 import _ from 'lodash';
 import Airtable from 'airtable';
 const base = new Airtable({ apiKey: 'keyCxnlep0bgotSrX' }).base('appHXXoVD1tn9QATh');
+import Papa from 'papaparse';
 
 import Header from './header';
 import Footer from './footer';
@@ -69,6 +70,7 @@ function App() {
 
     base('Clients').select().eachPage((records, fetchNextPage) => {
       dispatch(records);
+      console.log({ records });
 
       fetchNextPage();
     }, (err) => {
@@ -80,19 +82,34 @@ function App() {
 
   }, []); // Pass empty array to only run once on mount
 
+  // function handleClientsCsvFiles(e) {
+  //   let reader = new FileReader();
+  //   reader.onload = function() {
+  //     // Parse the client csv and update state
+  //     const clientsJson = csvToJson(reader.result);
+  //     console.log({ clientsJson });
+  //     setClientsFromCsv(clientsJson);
+  //   };
+  //   // Start reading the file. When it is done, calls the onload event defined above.
+  //   reader.readAsBinaryString(e.target.files[0]);
+  //   // reader.readAsText(e.target.files[0], 'UTF-8-BOM'); // using readAsText since it allows for encoding to be specified. Using UTF-8-BOM to hopefully catch Excel crap
+  // }
+
+  // using Papaparse library for FileReader and parsing to Json
   function handleClientsCsvFiles(e) {
-    let reader = new FileReader();
-    reader.onload = function() {
-      // Parse the client csv and update state
-      const clientsJson = csvToJson(reader.result);
-      setClientsFromCsv(clientsJson);
-    };
-    // Start reading the file. When it is done, calls the onload event defined above.
-    reader.readAsBinaryString(e.target.files[0]);
+    const file = e.target.files[0];
+    Papa.parse(file, {
+      header: true,
+      complete: function(results) {
+        console.log('Finished:', results.data);
+        setClientsFromCsv(results.data);
+      }
+    });
   }
 
   function renderClients() {
     const accountNamesList = clientsFromCsv.map(client => client['Account']);
+    console.log({ accountNamesList });
 
     // Filter clients by the list of account names in the user uploaded CSV
     const filteredClients = clients.filter(client => {
@@ -100,6 +117,7 @@ function App() {
     });
 
     const sortedClients = [...filteredClients];
+    console.log({ sortedClients });
 
     sortedClients.sort((a, b) => {
       // TODO: figure out why clients csv import is failing
