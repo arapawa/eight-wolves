@@ -156,7 +156,7 @@ function App() {
     reader.onload = function() {
       // Do something with the data
       var challengesJson = csvToJson(reader.result)[0];
-      console.log(challengesJson);
+      console.log({ challengesJson });
 
       // parse the challenges csv and update the state values
       setChallengeId(challengesJson.ChallengeId);
@@ -203,7 +203,7 @@ function App() {
 
     };
     // start reading the file. When it is done, calls the onload event defined above.
-    reader.readAsBinaryString(document.querySelector('#csv-challenges-input').files[0]);
+    reader.readAsBinaryString(document.querySelector('#csvChallengesInput').files[0]);
   }
 
   // From https://gist.github.com/iwek/7154578#file-csv-to-json-js
@@ -413,6 +413,7 @@ function App() {
       ] : [], // if no targeting, use an empty array
       'TeamSize': isTeamChallenge === 1 ? { MaxTeamSize: maxTeamSize, MinTeamSize: minTeamSize } : null
     };
+    console.log({ data });
 
     $.ajax({
       url: 'https://api.limeade.com/api/admin/activity',
@@ -432,14 +433,14 @@ function App() {
 
     }).fail((xhr, request, status, error) => {
       $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
-      console.error(request.status);
-      console.error(request.responseText);
+      console.error('status: ', request.status);
+      console.error('request: ', request.responseText);
       console.log('Create challenge failed for client ' + client.fields['Limeade e=']);
     });
 
   }
 
-  // for single-client-select
+  // // for single-client-select
   // function selectClient(e) {
   //   clients.forEach((client) => {
   //     if (client.fields['Limeade e='] === e.target.value) {
@@ -448,25 +449,26 @@ function App() {
   //   });
   // }
 
-  function renderEmployerNames() {
-    const sortedClients = [...clients];
+  // // for single-client-select
+  // function renderEmployerNames() {
+  //   const sortedClients = [...clients];
 
-    sortedClients.sort((a, b) => {
-      const nameA = a.fields['Limeade e='].toLowerCase();
-      const nameB = b.fields['Limeade e='].toLowerCase();
-      if (nameA < nameB) {
-        return -1;
-      }
-      if (nameA > nameB) {
-        return 1;
-      }
-      return 0;
-    });
+  //   sortedClients.sort((a, b) => {
+  //     const nameA = a.fields['Limeade e='].toLowerCase();
+  //     const nameB = b.fields['Limeade e='].toLowerCase();
+  //     if (nameA < nameB) {
+  //       return -1;
+  //     }
+  //     if (nameA > nameB) {
+  //       return 1;
+  //     }
+  //     return 0;
+  //   });
 
-    return sortedClients.map((client) => {
-      return <option key={client.id}>{client.fields['Limeade e=']}</option>;
-    });
-  }
+  //   return sortedClients.map((client) => {
+  //     return <option key={client.id}>{client.fields['Limeade e=']}</option>;
+  //   });
+  // }
 
   return (
     <div id="app">
@@ -485,7 +487,7 @@ function App() {
       </div>
       <div className="form-group">
         <label htmlFor="csvClientsInput">Import from CSV</label>
-        <input type="file" className="form-control-file" id="csvClientsInput" accept="*.csv" onChange={(e) => handleClientsCsvFiles(e)} />
+        <input type="file" id="csvClientsInput" accept="*.csv" onChange={(e) => handleClientsCsvFiles(e)} />
         <small className="form-text text-muted text-left">Note: file matches on Salesforce Name in Clients Most up to Date. Column in .csv is Account.</small>
       </div>
       <table className="table table-hover table-striped" id="activities">
@@ -504,8 +506,8 @@ function App() {
       <div className="row mb-1">
         <div className="col text-left">
           <h3>Challenge Content</h3>
-          <p id="csv-challenges-import" type="file" name="Import">Import from CSV</p>
-          <input type="file" id="csv-challenges-input" accept="*.csv" onChange={(e) => handleChallengesCsvFiles(e)} />
+          <label htmlFor="csvChallengesInput">Import from CSV</label>
+          <input type="file" id="csvChallengesInput" accept="*.csv" onChange={(e) => handleChallengesCsvFiles(e)} />
         </div>
       </div>
       <div className="row">
