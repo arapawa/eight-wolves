@@ -3,7 +3,7 @@ import moment from 'moment';
 import _ from 'lodash';
 import Airtable from 'airtable';
 const base = new Airtable({ apiKey: 'keyCxnlep0bgotSrX' }).base('appHXXoVD1tn9QATh');
-import Papa from 'papaparse';
+import Papa from 'papaparse'; // using Papaparse library for FileReader and parsing to Json
 
 import Header from './header';
 import Footer from './footer';
@@ -19,8 +19,8 @@ function App() {
   // const [selectedClient, setSelectedClient] = useState(null);
   const [activities, setActivities] = useState([]);
 
-  const [startDate, setStartDate] = useState('2020-05-22');
-  const [endDate, setEndDate] = useState('2020-07-01');
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
 
   const [challengeId, setChallengeId] = useState(null); // adding this in case we use the app for updating tiles. Could be fancy.
   const [imageUrl, setImageUrl] = useState('https://images.limeade.com/PDW/805d6a9d-186e-4462-8fe2-ca97a478ffca-large.jpg');
@@ -29,7 +29,6 @@ function App() {
   const [shortDescription, setShortDescription] = useState('Test upload from Eight Wolves.');
   const [longDescription, setLongDescription] = useState('<p>So many wolves.</p>');
 
-  // TODO: add remaining state variables
   const [allowSelfReport, setAllowSelfReport] = useState(0);
   const [challengeTarget, setChallengeTarget] = useState(1);
   const [challengeType, setChallengeType] = useState('OneTimeEvent');
@@ -70,7 +69,6 @@ function App() {
 
     base('Clients').select().eachPage((records, fetchNextPage) => {
       dispatch(records);
-      console.log({ records });
 
       fetchNextPage();
     }, (err) => {
@@ -82,26 +80,12 @@ function App() {
 
   }, []); // Pass empty array to only run once on mount
 
-  // function handleClientsCsvFiles(e) {
-  //   let reader = new FileReader();
-  //   reader.onload = function() {
-  //     // Parse the client csv and update state
-  //     const clientsJson = csvToJson(reader.result);
-  //     console.log({ clientsJson });
-  //     setClientsFromCsv(clientsJson);
-  //   };
-  //   // Start reading the file. When it is done, calls the onload event defined above.
-  //   reader.readAsBinaryString(e.target.files[0]);
-  //   // reader.readAsText(e.target.files[0], 'UTF-8-BOM'); // using readAsText since it allows for encoding to be specified. Using UTF-8-BOM to hopefully catch Excel crap
-  // }
-
-  // using Papaparse library for FileReader and parsing to Json
   function handleClientsCsvFiles(e) {
     const file = e.target.files[0];
     Papa.parse(file, {
       header: true,
       complete: function(results) {
-        console.log('Finished:', results.data);
+        console.log('Clients:', results.data);
         setClientsFromCsv(results.data);
       }
     });
@@ -109,7 +93,6 @@ function App() {
 
   function renderClients() {
     const accountNamesList = clientsFromCsv.map(client => client['Account']);
-    console.log({ accountNamesList });
 
     // Filter clients by the list of account names in the user uploaded CSV
     const filteredClients = clients.filter(client => {
@@ -117,10 +100,8 @@ function App() {
     });
 
     const sortedClients = [...filteredClients];
-    console.log({ sortedClients });
 
     sortedClients.sort((a, b) => {
-      // TODO: figure out why clients csv import is failing
       const nameA = a.fields['Salesforce Name'].toLowerCase();
       const nameB = b.fields['Salesforce Name'].toLowerCase();
       if (nameA < nameB) {
@@ -151,118 +132,57 @@ function App() {
   }
 
   function handleChallengesCsvFiles(e) {
-    console.log(e);
-    var reader = new FileReader();
-    reader.onload = function() {
-      // Do something with the data
-      var challengesJson = csvToJson(reader.result)[0];
-      console.log({ challengesJson });
+    const file = e.target.files[0];
+    Papa.parse(file, {
+      header: true,
+      dynamicTyping: true,
+      complete: function(results) {
+        console.log('Challenges:', results.data);
 
-      // parse the challenges csv and update the state values
-      setChallengeId(challengesJson.ChallengeId);
-      setChallengeType(challengesJson.ChallengeType);
-      setIsWeekly(challengesJson.IsWeekly);
-      // skipping WinStrategy since the upload doesn't seem to need it
-      setChallengeTarget(challengesJson.Target);
-      setActivityText(challengesJson.Activity);
-      setTitle(challengesJson.ChallengeName);
-      setDisplayPriority(challengesJson.DisplayPriority);
-      setStartDate(challengesJson.StartDate);
-      setEndDate(challengesJson.EndDate);
-      setShortDescription(challengesJson.ShortDescription);
-      setLongDescription(challengesJson.MoreInformation);
-      setImageUrl(challengesJson.ImageUrl);
-      // skipping ShowInProgram since we determine it during upload
-      // skipping RewardType because what is it even
-      setPointValue(challengesJson.Reward);
-      // skipping Dimensions becasue eff 'em
-      // skipping Leaderboard
-      setEnableDeviceTracking(challengesJson.EnableDeviceTracking);
-      setAllowSelfReport(challengesJson.AllowSelfReporting);
-      // skipping DeviceTrackingUnits, not sure where it fits in the upload
-      setIsTeamChallenge(challengesJson.IsTeamChallenge);
-      setMinTeamSize(challengesJson.MinTeamSize);
-      setMaxTeamSize(challengesJson.MaxTeamSize);
-      setSubgroup(challengesJson.Subgroup);
-      setField1(challengesJson.Field1);
-      setField1Value(challengesJson.Field1Value);
-      setField2(challengesJson.Field2);
-      setField2Value(challengesJson.Field2Value);
-      setField3(challengesJson.Field3);
-      setField3Value(challengesJson.Field3Value);
-      // skipping Appearance
-      setPartnerId(challengesJson.IntegrationPartnerId);
-      // skipping ButtonText since we determine it during upload
-      // skipping TargetUrl since we determine it during upload
-      setEventCode(challengesJson.EventCode);
-      // skipping ShowExtendedDescription since we determine it during upload
-      // skipping ActivityTemplateId, what even is that
-      setIsFeatured(challengesJson.IsFeatured);
-      // skippingFeaturedDescription since we determine it during upload
-      // skipping FeaturedImageUrl since we determine it during upload
-
-    };
-    // start reading the file. When it is done, calls the onload event defined above.
-    reader.readAsBinaryString(document.querySelector('#csvChallengesInput').files[0]);
-  }
-
-  // From https://gist.github.com/iwek/7154578#file-csv-to-json-js
-  // Convert csv string to JSON
-  function csvToJson(csv) {
-    var lines = csv.split('\n');
-    var result = [];
-    var headers = lines[0].split(',');
-
-    for (var i=1; i<lines.length; i++) {
-      var obj = {};
-
-      var row = lines[i],
-        queryIdx = 0,
-        startValueIdx = 0,
-        idx = 0;
-
-      if (row.trim() === '') {
-        continue;
+        // parse the challenges csv and update the state values
+        setChallengeId(results.data[0].ChallengeId);
+        setChallengeType(results.data[0].ChallengeType);
+        setIsWeekly(results.data[0].IsWeekly);
+        // skipping WinStrategy since the upload doesn't seem to need it
+        setChallengeTarget(results.data[0].Target);
+        setActivityText(results.data[0].Activity);
+        setTitle(results.data[0].ChallengeName);
+        setDisplayPriority(results.data[0].DisplayPriority);
+        setStartDate(results.data[0].StartDate);
+        setEndDate(results.data[0].EndDate);
+        setShortDescription(results.data[0].ShortDescription);
+        setLongDescription(results.data[0].MoreInformation);
+        setImageUrl(results.data[0].ImageUrl);
+        // skipping ShowInProgram since we determine it during upload
+        // skipping RewardType because what is it even
+        setPointValue(results.data[0].Reward);
+        // skipping Dimensions becasue eff 'em
+        // skipping Leaderboard
+        setEnableDeviceTracking(results.data[0].EnableDeviceTracking);
+        setAllowSelfReport(results.data[0].AllowSelfReporting);
+        // skipping DeviceTrackingUnits, not sure where it fits in the upload
+        setIsTeamChallenge(results.data[0].IsTeamChallenge);
+        setMinTeamSize(results.data[0].MinTeamSize);
+        setMaxTeamSize(results.data[0].MaxTeamSize);
+        setSubgroup(results.data[0].Subgroup);
+        setField1(results.data[0].Field1);
+        setField1Value(results.data[0].Field1Value);
+        setField2(results.data[0].Field2);
+        setField2Value(results.data[0].Field2Value);
+        setField3(results.data[0].Field3);
+        setField3Value(results.data[0].Field3Value);
+        // skipping Appearance
+        setPartnerId(results.data[0].IntegrationPartnerId);
+        // skipping ButtonText since we determine it during upload
+        // skipping TargetUrl since we determine it during upload
+        setEventCode(results.data[0].EventCode);
+        // skipping ShowExtendedDescription since we determine it during upload
+        // skipping ActivityTemplateId, what even is that
+        setIsFeatured(results.data[0].IsFeatured);
+        // skippingFeaturedDescription since we determine it during upload
+        // skipping FeaturedImageUrl since we determine it during upload
       }
-
-      while (idx < row.length) {
-        /* if we meet a double quote we skip until the next one */
-        var c = row[idx];
-
-        if (c === '"') {
-          do {
-            c = row[++idx];
-          } while (c !== '"' && idx < row.length - 1);
-        }
-
-        if (c === ',' || /* handle end of line with no comma */ idx === row.length - 1) {
-          /* we've got a value */
-          var value = row.substr(startValueIdx, idx - startValueIdx).trim();
-
-          /* skip first double quote */
-          if (value[0] === '"') {
-            value = value.substr(1);
-          }
-          /* skip last comma */
-          if (value[value.length - 1] === ',') {
-            value = value.substr(0, value.length - 1);
-          }
-          /* skip last double quote */
-          if (value[value.length - 1] === '"') {
-            value = value.substr(0, value.length - 1);
-          }
-
-          var key = headers[queryIdx++];
-          obj[key] = value;
-          startValueIdx = idx + 1;
-        }
-
-        ++idx;
-      }
-
-      result.push(obj);
-    }
-    return result;
+    });
   }
 
   function sanitize(code) {
@@ -279,7 +199,7 @@ function App() {
     return sanitized;
   }
 
-  // probably no longer needed
+  // probably no longer needed, but keeping for now just in case it's useful later
   // function massUpload() {
   //   // Open the modal
   //   $('#uploadModal').modal();
@@ -413,7 +333,7 @@ function App() {
       ] : [], // if no targeting, use an empty array
       'TeamSize': isTeamChallenge === 1 ? { MaxTeamSize: maxTeamSize, MinTeamSize: minTeamSize } : null
     };
-    console.log({ data });
+    console.log('data for upload:', data);
 
     $.ajax({
       url: 'https://api.limeade.com/api/admin/activity',
