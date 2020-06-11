@@ -396,40 +396,45 @@ function App() {
 
       <div className="row mb-1">
         <div className="col text-left">
-          <h3>Clients</h3>
+          <h4>Clients</h4>
           {/* For single-client-select */}
           {/* <label htmlFor="employerName">EmployerName</label>
           <select id="employerName" className="form-control custom-select" onChange={selectClient}>
             <option defaultValue>Select Employer</option>
             {renderEmployerNames()}
           </select> */}
+          <div className="form-group">
+            <label htmlFor="csvClientsInput">Import from CSV</label>
+            <input type="file" id="csvClientsInput" class="csv-button" accept="*.csv" onChange={(e) => handleClientsCsvFiles(e)} />
+            <small className="form-text text-muted text-left">Note: file matches on Salesforce Name in Clients Most up to Date. Column in .csv is Account.</small>
+          </div>
+        </div>
+
+        <div className="col text-left">
+          <h4>Challenge Content</h4>
+          <label htmlFor="csvChallengesInput">Import from CSV</label>
+          <input type="file" id="csvChallengesInput" class="csv-button" accept="*.csv" onChange={(e) => handleChallengesCsvFiles(e)} />
         </div>
       </div>
-      <div className="form-group">
-        <label htmlFor="csvClientsInput">Import from CSV</label>
-        <input type="file" id="csvClientsInput" accept="*.csv" onChange={(e) => handleClientsCsvFiles(e)} />
-        <small className="form-text text-muted text-left">Note: file matches on Salesforce Name in Clients Most up to Date. Column in .csv is Account.</small>
-      </div>
-      <table className="table table-hover table-striped" id="activities">
-        <thead>
-          <tr>
-            <th scope="col">Salesforce Name</th>
-            <th scope="col">Challenge Id</th>
-            <th scope="col">Upload</th>
-          </tr>
-        </thead>
-        <tbody>
-          {clientsFromCsv ? renderClients() : <tr />}
-        </tbody>
-      </table>
 
       <div className="row mb-1">
-        <div className="col text-left">
-          <h3>Challenge Content</h3>
-          <label htmlFor="csvChallengesInput">Import from CSV</label>
-          <input type="file" id="csvChallengesInput" accept="*.csv" onChange={(e) => handleChallengesCsvFiles(e)} />
-        </div>
+        <table className="table table-hover table-striped" id="activities">
+          <thead>
+            <tr>
+              <th scope="col">Salesforce Name</th>
+              <th scope="col">Challenge Id</th>
+              <th scope="col">Upload</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clientsFromCsv ? renderClients() : <tr />}
+          </tbody>
+        </table>
       </div>
+
+
+
+
       <div className="row">
         <div className="col text-left">
           {/* TODO: add challenge form inputs here */}
