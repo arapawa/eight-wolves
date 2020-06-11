@@ -19,6 +19,9 @@ function App() {
   // const [selectedClient, setSelectedClient] = useState(null);
   const [activities, setActivities] = useState([]);
 
+  const [heartbeatSurveyUrl, setHeartbeatSurveyUrl] = useState('');
+  console.log(heartbeatSurveyUrl);
+
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
@@ -199,6 +202,21 @@ function App() {
     return sanitized;
   }
 
+  // Show/Hide Heartbeat Survey textbox, and clear URL state if not checked
+  function handleHeartbeatSurvey(e) {
+    const heartbeat = document.querySelector('#heartbeatSurvey');
+    if (document.querySelector('#toggleHeartbeatSurvey').checked) {
+      heartbeat.style.display = 'block';
+    } else {
+      heartbeat.style.display = 'none';
+      setHeartbeatSurveyUrl('');
+    }
+  }
+
+  function handleHeartbeatSurveyUrl(e) {
+    setHeartbeatSurveyUrl(e.target.value);
+  }
+
   // probably no longer needed, but keeping for now just in case it's useful later
   // function massUpload() {
   //   // Open the modal
@@ -335,6 +353,10 @@ function App() {
     };
     console.log('data for upload:', data);
 
+    // TODO: upload if heartbeat survey
+
+
+    // TODO: upload else no heartbeat survey
     $.ajax({
       url: 'https://api.limeade.com/api/admin/activity',
       type: 'POST',
@@ -405,15 +427,28 @@ function App() {
           </select> */}
           <div className="form-group">
             <label htmlFor="csvClientsInput">Import from CSV</label>
-            <input type="file" id="csvClientsInput" class="csv-button" accept="*.csv" onChange={(e) => handleClientsCsvFiles(e)} />
+            <input type="file" id="csvClientsInput" className="form-control-file" accept="*.csv" onChange={(e) => handleClientsCsvFiles(e)} />
             <small className="form-text text-muted text-left">Note: file matches on Salesforce Name in Clients Most up to Date. Column in .csv is Account.</small>
           </div>
         </div>
 
         <div className="col text-left">
           <h4>Challenge Content</h4>
-          <label htmlFor="csvChallengesInput">Import from CSV</label>
-          <input type="file" id="csvChallengesInput" class="csv-button" accept="*.csv" onChange={(e) => handleChallengesCsvFiles(e)} />
+          <div className="form-group">
+            <label htmlFor="csvChallengesInput">Import from CSV</label>
+            <input type="file" id="csvChallengesInput" className="form-control-file" accept="*.csv" onChange={(e) => handleChallengesCsvFiles(e)} />
+          </div>
+          <div className="form-group">
+            {/* TODO: add heartbeat survey textbox (and maybe radio for selecting whether there is heartbeat survey) */}
+            <div className="form-check">
+              <input className="form-check-input" type="checkbox" id="toggleHeartbeatSurvey" onChange={handleHeartbeatSurvey} />
+              <label className="form-check-label" htmlFor="showHeartbeatSurvey">Heartbeat Survey?</label>
+            </div>
+            <div id="heartbeatSurvey">
+              <label htmlFor="heartbeatSurveyUrl">Heartbeat Survey URL</label>
+              <input className="form-control form-control-sm" type="text" id="heartbeatSurveyUrl" value={heartbeatSurveyUrl} onChange={handleHeartbeatSurveyUrl} />
+            </div>
+          </div>
         </div>
       </div>
 

@@ -17,6 +17,10 @@ body {
   opacity: .7;
 }
 
+#heartbeatSurvey {
+  display: none;
+}
+
 #footer {
   margin: 1em 0;
 }
@@ -30,6 +34,6 @@ body {
   overflow: hidden;
 }
 
-.csv-button {
+input {
   display: block;
 }
