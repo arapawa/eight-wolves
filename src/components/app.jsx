@@ -19,6 +19,9 @@ function App() {
   // const [selectedClient, setSelectedClient] = useState(null);
   const [activities, setActivities] = useState([]);
 
+  const [surveyId, setSurveyId] = useState('');
+  const [helpMessage, setHelpMessage] = useState('');
+
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
@@ -199,6 +202,23 @@ function App() {
     return sanitized;
   }
 
+  // Show/Hide Heartbeat Survey textbox, and clear URL state if not checked
+  function handleHeartbeatSurvey(e) {
+    const heartbeat = document.querySelector('#heartbeatSurvey');
+    if (document.querySelector('#toggleHeartbeatSurvey').checked) {
+      heartbeat.style.display = 'block';
+      setHelpMessage('${surveyUrl}'); // setting helpMessage so we can easily display the variable name that gets replaced to the user
+    } else {
+      heartbeat.style.display = 'none';
+      setSurveyId('');
+      setHelpMessage('');
+    }
+  }
+
+  function handleSurveyId(e) {
+    setSurveyId(e.target.value);
+  }
+
   // probably no longer needed, but keeping for now just in case it's useful later
   // function massUpload() {
   //   // Open the modal
@@ -335,28 +355,76 @@ function App() {
     };
     console.log('data for upload:', data);
 
-    $.ajax({
-      url: 'https://api.limeade.com/api/admin/activity',
-      type: 'POST',
-      dataType: 'json',
-      data: JSON.stringify(data),
-      headers: {
-        Authorization: 'Bearer ' + client.fields['LimeadeAccessToken']
-      },
-      contentType: 'application/json; charset=utf-8'
-    }).done((result) => {
+    // upload if heartbeat survey
+    if (surveyId !== '') {
+      $.ajax({
+        url: 'https://api.limeade.com/api/admin/activity',
+        type: 'POST',
+        dataType: 'json',
+        data: JSON.stringify(data),
+        headers: {
+          Authorization: 'Bearer ' + client.fields['LimeadeAccessToken']
+        },
+        contentType: 'application/json; charset=utf-8'
+      }).done((result) => {
+        const surveyUrl = `/api/Redirect?url=https%3A%2F%2Fheartbeat.adurolife.com%2Fapp%2Fsurvey%2F%3Fs%3D${surveyId}%26q1%3D${result.Data.ChallengeId}%26q4%3D%5Bparticipantcode%5D%26q5%3D%5Be%5D`;
 
-      // Change row to green on success
-      $('#' + employerName.replace(/\s*/g, '')).addClass('bg-success text-white');
-      $('#' + employerName.replace(/\s*/g, '') + ' .challenge-id').html(`<a href="${client.fields['Domain']}/admin/program-designer/activities/activity/${result.Data.ChallengeId}" target="_blank">${result.Data.ChallengeId}</a>`);
+        $.ajax({
+          url: 'https://api.limeade.com/api/admin/activity/' + result.Data.ChallengeId,
+          type: 'PUT',
+          dataType: 'json',
+          data: JSON.stringify({
+            'AboutChallenge': longDescription.replace('${surveyUrl}', surveyUrl)
+          }),
+          headers: {
+            Authorization: 'Bearer ' + client.fields['LimeadeAccessToken']
+          },
+          contentType: 'application/json; charset=utf-8'
+        }).done((result) => {
+
+          // Change row to green on success (and remove red if present)
+          $('#' + employerName.replace(/\s*/g, '')).removeClass('bg-danger');
+          $('#' + employerName.replace(/\s*/g, '')).addClass('bg-success text-white');
+          $('#' + employerName.replace(/\s*/g, '') + ' .challenge-id').html(`<a href="${client.fields['Domain']}/admin/program-designer/activities/activity/${result.Data.ChallengeId}" target="_blank">${result.Data.ChallengeId}</a>`);
+
+        }).fail((request, status, error) => {
+          $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
+          console.error(request.status);
+          console.error(request.responseText);
+          console.log('Update challenge failed for client', client.fields['Limeade e=']);
+        });
+
+      }).fail((request, status, error) => {
+        $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
+        console.error(request.status);
+        console.error(request.responseText);
+        console.log('Create challenge failed for client ' + client.fields['Limeade e=']);
+      });
+    } else {
+      // upload when no heartbeat survey
+      $.ajax({
+        url: 'https://api.limeade.com/api/admin/activity',
+        type: 'POST',
+        dataType: 'json',
+        data: JSON.stringify(data),
+        headers: {
+          Authorization: 'Bearer ' + client.fields['LimeadeAccessToken']
+        },
+        contentType: 'application/json; charset=utf-8'
+      }).done((result) => {
+
+        // Change row to green on success
+        $('#' + employerName.replace(/\s*/g, '')).addClass('bg-success text-white');
+        $('#' + employerName.replace(/\s*/g, '') + ' .challenge-id').html(`<a href="${client.fields['Domain']}/admin/program-designer/activities/activity/${result.Data.ChallengeId}" target="_blank">${result.Data.ChallengeId}</a>`);
 
 
-    }).fail((xhr, request, status, error) => {
-      $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
-      console.error('status: ', request.status);
-      console.error('request: ', request.responseText);
-      console.log('Create challenge failed for client ' + client.fields['Limeade e=']);
-    });
+      }).fail((xhr, request, status, error) => {
+        $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
+        console.error('status: ', request.status);
+        console.error('request: ', request.responseText);
+        console.log('Create challenge failed for client ' + client.fields['Limeade e=']);
+      });  
+    }
 
   }
 
@@ -405,15 +473,28 @@ function App() {
           </select> */}
           <div className="form-group">
             <label htmlFor="csvClientsInput">Import from CSV</label>
-            <input type="file" id="csvClientsInput" class="csv-button" accept="*.csv" onChange={(e) => handleClientsCsvFiles(e)} />
+            <input type="file" id="csvClientsInput" className="form-control-file" accept="*.csv" onChange={(e) => handleClientsCsvFiles(e)} />
             <small className="form-text text-muted text-left">Note: file matches on Salesforce Name in Clients Most up to Date. Column in .csv is Account.</small>
           </div>
         </div>
 
         <div className="col text-left">
           <h4>Challenge Content</h4>
-          <label htmlFor="csvChallengesInput">Import from CSV</label>
-          <input type="file" id="csvChallengesInput" class="csv-button" accept="*.csv" onChange={(e) => handleChallengesCsvFiles(e)} />
+          <div className="form-group">
+            <label htmlFor="csvChallengesInput">Import from CSV</label>
+            <input type="file" id="csvChallengesInput" className="form-control-file" accept="*.csv" onChange={(e) => handleChallengesCsvFiles(e)} />
+          </div>
+          <div className="form-group">
+            <div className="form-check">
+              <input className="form-check-input" type="checkbox" id="toggleHeartbeatSurvey" onChange={handleHeartbeatSurvey} />
+              <label className="form-check-label" htmlFor="showHeartbeatSurvey">Heartbeat Survey?</label>
+            </div>
+            <div id="heartbeatSurvey">
+              <label htmlFor="surveyId">Heartbeat Survey ID</label>
+              <input className="form-control form-control-sm" type="text" id="surveyId" value={surveyId} onChange={handleSurveyId} />
+              <small>Note: App will replace {helpMessage} in Long Description HTML with the completed Heartbeat survey URL during upload.</small>
+            </div>
+          </div>
         </div>
       </div>
 
