@@ -496,7 +496,7 @@ function App() {
           <div className="form-group">
             <div className="form-check">
               <input className="form-check-input" type="checkbox" id="toggleHeartbeatSurvey" onChange={handleHeartbeatSurvey} />
-              <label className="form-check-label" htmlFor="showHeartbeatSurvey">Heartbeat Survey?</label>
+              <label className="form-check-label" htmlFor="toggleHeartbeatSurvey">Heartbeat Survey?</label>
             </div>
             <div id="heartbeatSurvey">
               <label htmlFor="surveyId">Heartbeat Survey ID</label>
