@@ -125,6 +125,7 @@ function App() {
             <a href={client.fields['Domain'] + '/ControlPanel/RoleAdmin/ViewChallenges.aspx?type=employer'} target="_blank">{client.fields['Salesforce Name']}</a>
           </td>
           <td className="challenge-id"></td>
+          <td className="status"></td>
           <td>
             <button type="button" className="btn btn-primary" onClick={() => uploadChallenge(client)}>Upload</button>
           </td>
@@ -357,6 +358,7 @@ function App() {
 
     // upload if heartbeat survey
     if (surveyId !== '') {
+      $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Uploading...');
       $.ajax({
         url: 'https://api.limeade.com/api/admin/activity',
         type: 'POST',
@@ -385,10 +387,12 @@ function App() {
           // Change row to green on success (and remove red if present)
           $('#' + employerName.replace(/\s*/g, '')).removeClass('bg-danger');
           $('#' + employerName.replace(/\s*/g, '')).addClass('bg-success text-white');
+          $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Success');
           $('#' + employerName.replace(/\s*/g, '') + ' .challenge-id').html(`<a href="${client.fields['Domain']}/admin/program-designer/activities/activity/${result.Data.ChallengeId}" target="_blank">${result.Data.ChallengeId}</a>`);
 
         }).fail((request, status, error) => {
           $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
+          $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Failed: ' + request.responseText);
           console.error(request.status);
           console.error(request.responseText);
           console.log('Update challenge failed for client', client.fields['Limeade e=']);
@@ -396,12 +400,14 @@ function App() {
 
       }).fail((request, status, error) => {
         $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
+        $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Failed: ' + request.responseText);
         console.error(request.status);
         console.error(request.responseText);
         console.log('Create challenge failed for client ' + client.fields['Limeade e=']);
       });
     } else {
       // upload when no heartbeat survey
+      $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Uploading...');
       $.ajax({
         url: 'https://api.limeade.com/api/admin/activity',
         type: 'POST',
@@ -414,12 +420,15 @@ function App() {
       }).done((result) => {
 
         // Change row to green on success
+        $('#' + employerName.replace(/\s*/g, '')).removeClass('bg-danger');
         $('#' + employerName.replace(/\s*/g, '')).addClass('bg-success text-white');
+        $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Success');
         $('#' + employerName.replace(/\s*/g, '') + ' .challenge-id').html(`<a href="${client.fields['Domain']}/admin/program-designer/activities/activity/${result.Data.ChallengeId}" target="_blank">${result.Data.ChallengeId}</a>`);
 
 
       }).fail((xhr, request, status, error) => {
         $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
+        $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Failed: ' + request.responseText);
         console.error('status: ', request.status);
         console.error('request: ', request.responseText);
         console.log('Create challenge failed for client ' + client.fields['Limeade e=']);
@@ -504,6 +513,7 @@ function App() {
             <tr>
               <th scope="col">Salesforce Name</th>
               <th scope="col">Challenge Id</th>
+              <th scope="col">Status</th>
               <th scope="col">Upload</th>
             </tr>
           </thead>
