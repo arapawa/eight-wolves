@@ -103,6 +103,12 @@ function App() {
     });
 
     const sortedClients = [...filteredClients];
+    console.log('sortedClients:', sortedClients);
+    if (clientsFromCsv.length !== sortedClients.length) {
+      console.log('Clients list does not match! Check clients csv to ensure its Account names match Salesforce');
+    } else {
+      console.log('Clients csv matches sortedClients. Carry on.');
+    }
 
     sortedClients.sort((a, b) => {
       const nameA = a.fields['Salesforce Name'].toLowerCase();
@@ -370,20 +376,18 @@ function App() {
         contentType: 'application/json; charset=utf-8'
       }).done((result) => {
         const surveyUrl = `/api/Redirect?url=https%3A%2F%2Fheartbeat.adurolife.com%2Fapp%2Fsurvey%2F%3Fs%3D${surveyId}%26q1%3D${result.Data.ChallengeId}%26q4%3D%5Bparticipantcode%5D%26q5%3D%5Be%5D`;
-
         $.ajax({
           url: 'https://api.limeade.com/api/admin/activity/' + result.Data.ChallengeId,
           type: 'PUT',
           dataType: 'json',
           data: JSON.stringify({
-            'AboutChallenge': longDescription.replace('${surveyUrl}', surveyUrl)
+            'AboutChallenge': longDescription.replace(/\${surveyUrl}/g, surveyUrl) // replaces &{surveyUrl} in file's longDescription (aka MoreInformation)
           }),
           headers: {
             Authorization: 'Bearer ' + client.fields['LimeadeAccessToken']
           },
           contentType: 'application/json; charset=utf-8'
         }).done((result) => {
-
           // Change row to green on success (and remove red if present)
           $('#' + employerName.replace(/\s*/g, '')).removeClass('bg-danger');
           $('#' + employerName.replace(/\s*/g, '')).addClass('bg-success text-white');
