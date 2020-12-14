@@ -35,6 +35,7 @@ function App() {
   const [allowSelfReport, setAllowSelfReport] = useState(0);
   const [challengeTarget, setChallengeTarget] = useState(1);
   const [challengeType, setChallengeType] = useState('OneTimeEvent');
+  const [defaultPrivacy, setDefaultPrivacy] = useState(0);
   const [displayPriority, setDisplayPriority] = useState(null);
   const [enableDeviceTracking, setEnableDeviceTracking] = useState(0);
   const [eventCode, setEventCode] = useState(null); // adding this in case we ever need it
@@ -191,6 +192,8 @@ function App() {
         setIsFeatured(results.data[0].IsFeatured);
         // skippingFeaturedDescription since we determine it during upload
         // skipping FeaturedImageUrl since we determine it during upload
+        // skipping DailySelfReportLimit since it's rarely used
+        setDefaultPrivacy(results.data[0].DefaultPrivacy);
       }
     });
   }
@@ -300,6 +303,7 @@ function App() {
       'ChallengeTarget': challengeTarget, // Target in csv
       'ChallengeType': challengeType, // ChallengeType in csv
       'Dimensions': [],
+      'DefaultPrivacyFlag': defaultPrivacy === 0 ? 'Unspecified': 1,
       'DisplayInProgram': startDate === moment().format('YYYY-MM-DD') ? true : false,  // sets true if the challenge starts today
       'DisplayPriority': displayPriority,
       'EndDate': endDate,
