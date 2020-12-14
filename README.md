@@ -43,3 +43,5 @@ Clone this repo, install dependencies, then start developing with webpack/browse
 	> npm install
 	> npm start
 ```
+
+If the API reference is needed, this application uses the ActivityLifecycle API functions.
