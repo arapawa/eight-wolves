@@ -18,7 +18,7 @@ Example clients file structure:
 	Joe's Big CD Shack
 ```
 
-Once the clients file is ready, it can be loaded into the application and the application's table should populate. If a client is not appearing in the table, check the client's `Salesforce Name` in Clients Most Up to Date to ensure it matches Salesforce and the file you'll be importing into Eight Wolves.
+Once the clients file is ready, it can be loaded into the application and the application's table should populate. If a client is not appearing in the table, check the client's `Salesforce Name` in Clients Most Up to Date to ensure it matches Salesforce and the file you'll be importing into Eight Wolves. Additionally, the console log can be checked to see if the number of clients in the file matches the number of clients populated in the table.
 
 #### Challenge Content file (CSV) ####
 The Challenge Content file should be a Transporter structured file. This can be downloaded from Challenges (Classic) or Calendar Builder.
@@ -29,6 +29,8 @@ Once you have this file of a single challenge ready, import the Clients file int
 
 #### Uploading Challenges ####
 Once you have both files imported and the table is populated, click the Upload button for each client and the application will upload the challenge to that client platform.
+
+If there is an error uploading the challenge, the table row will turn red and display the error message from the API. (Note: sometimes the error message received from the API is not helpful. Sorry.)
 
 ### Getting Started Developing ###
 
