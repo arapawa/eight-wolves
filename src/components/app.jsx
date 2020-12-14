@@ -226,33 +226,6 @@ function App() {
     setSurveyId(e.target.value);
   }
 
-  // probably no longer needed, but keeping for now just in case it's useful later
-  // function massUpload() {
-  //   // Open the modal
-  //   $('#uploadModal').modal();
-
-  //   let timer = 0;
-
-  //   // Upload to app clients
-  //   const filteredClients = clients.filter(client => {
-  //     //return client.fields['Has App'] === 'Yes';
-  //     return client.fields['Has App'] === 'Yes' && client.fields['Uploaded'] !== '1';
-  //   });
-
-  //   // Set counter based on filteredClients
-  //   $('#counter').html(`<p><span id="finishedUploads">0</span> / ${filteredClients.length}</p>`);
-
-  //   filteredClients.map(client => {
-  //     // 4 seconds between ajax requests, because limeade is bad and returns 500 errors if we go too fast
-  //     // These requests average about 2.6-3.4 seconds but we've seen limeade take up to 4.4s, either way this
-  //     // guarantees concurrent calls will be rare, which seem to be the source of our woes
-  //     timer += 4000;
-  //     setTimeout(() => {
-  //       uploadChallenge(client);
-  //     }, timer);
-  //   });
-  // }
-
   function uploadChallenge(client) {
     const employerName = client.fields['Limeade e='];
 
@@ -441,35 +414,6 @@ function App() {
 
   }
 
-  // // for single-client-select
-  // function selectClient(e) {
-  //   clients.forEach((client) => {
-  //     if (client.fields['Limeade e='] === e.target.value) {
-  //       setSelectedClient(client);
-  //     }
-  //   });
-  // }
-
-  // // for single-client-select
-  // function renderEmployerNames() {
-  //   const sortedClients = [...clients];
-
-  //   sortedClients.sort((a, b) => {
-  //     const nameA = a.fields['Limeade e='].toLowerCase();
-  //     const nameB = b.fields['Limeade e='].toLowerCase();
-  //     if (nameA < nameB) {
-  //       return -1;
-  //     }
-  //     if (nameA > nameB) {
-  //       return 1;
-  //     }
-  //     return 0;
-  //   });
-
-  //   return sortedClients.map((client) => {
-  //     return <option key={client.id}>{client.fields['Limeade e=']}</option>;
-  //   });
-  // }
 
   return (
     <div id="app">
@@ -527,21 +471,10 @@ function App() {
         </table>
       </div>
 
-
-
-
       <div className="row">
         <div className="col text-left">
           {/* TODO: add challenge form inputs here */}
         </div>
-      </div>
-
-      <div className="row">
-        {/* For single-client-select */}
-        {/* <div className="col text-left">
-          <button type="button" className="btn btn-primary" id="uploadButton" onClick={() => uploadChallenge(selectedClient)}>Single Upload</button>
-          <img id="spinner" src="images/spinner.svg" />
-        </div> */}
       </div>
 
       <Footer />
