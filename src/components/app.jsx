@@ -96,11 +96,11 @@ function App() {
   }
 
   function renderClients() {
-    const accountNamesList = clientsFromCsv.map(client => client['Account']);
+    const accountNamesList = clientsFromCsv.map(client => client['Account'].toLowerCase());
 
     // Filter clients by the list of account names in the user uploaded CSV
     const filteredClients = clients.filter(client => {
-      return accountNamesList.includes(client.fields['Salesforce Name']);
+      return accountNamesList.includes(client.fields['Salesforce Name'].toLowerCase());
     });
 
     const sortedClients = [...filteredClients];
