@@ -106,7 +106,11 @@ function App() {
     const sortedClients = [...filteredClients];
     console.log('sortedClients:', sortedClients);
     if (clientsFromCsv.length !== sortedClients.length) {
-      console.log('Clients list does not match! Check clients csv to ensure its Account names match Salesforce');
+      console.error('Clients list does not match! Check clients csv to ensure its Account names match Salesforce Name in Clients (Most up to Date)');
+      // compile list of unmatched clients
+      const filteredClientsNamesList = filteredClients.map(filteredClient => filteredClient.fields['Salesforce Name'].toLowerCase()).sort();
+      const missingClients = _.difference(accountNamesList, filteredClientsNamesList);
+      console.log('missingClients (shown as lowercase since the comparison is made with toLowercase():', missingClients);
     } else {
       console.log('Clients csv matches sortedClients. Carry on.');
     }
