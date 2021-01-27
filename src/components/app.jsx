@@ -115,17 +115,18 @@ function App() {
       console.log('Clients csv matches sortedClients. Carry on.');
     }
 
-    sortedClients.sort((a, b) => {
-      const nameA = a.fields['Salesforce Name'].toLowerCase();
-      const nameB = b.fields['Salesforce Name'].toLowerCase();
-      if (nameA < nameB) {
-        return -1;
-      }
-      if (nameA > nameB) {
-        return 1;
-      }
-      return 0;
-    });
+    // // removing sorting for now so table order matches .csv order
+    // sortedClients.sort((a, b) => {
+    //   const nameA = a.fields['Salesforce Name'].toLowerCase();
+    //   const nameB = b.fields['Salesforce Name'].toLowerCase();
+    //   if (nameA < nameB) {
+    //     return -1;
+    //   }
+    //   if (nameA > nameB) {
+    //     return 1;
+    //   }
+    //   return 0;
+    // });
 
     return sortedClients.map((client) => {
       const employerName = client.fields['Limeade e='];
@@ -232,6 +233,247 @@ function App() {
   function handleSurveyId(e) {
     setSurveyId(e.target.value);
   }
+
+  function massUpload() {
+    // using rowId rather than the tr id so it can be incremented later, and so it's clearly different from challengeIndex
+    let rowId = 0;
+    // upload first challenge in challengesFromCsv
+    massUploadChallenge(rowId);
+
+    function massUploadChallenge(rowId) {
+      // declaring client and employerName so this function's structure can match uploadChallenge()
+      let client = {};
+      const employerName = clientsFromCsv[rowId].Account;
+
+      // let the user know that an upload is occurring
+      $('#' + employerName + ' .status').html('Uploading...');
+
+      // get the domain for the client from Airtable
+      let psk = '';
+      for (let i = 0; i < clients.length; i++) {
+        if (clients[i].fields['Limeade e='] === employerName) {
+          client = clients[i]; // set the client so the airtable data can be used for upload auth
+          psk = client.fields['Limeade PSK'];
+        }
+      }
+
+      // upload the challenge
+      // basically just a copypaste of uploadChallenge() below
+      let frequency = '';
+      if (enableDeviceTracking === 1) {
+        frequency = 'Daily';
+      } else if (isWeekly === 1) {
+        frequency = 'Weekly'; // this order is intentional, since Weekly Steps have Frequency of Weekly
+      } else {
+        frequency = 'None';
+      }
+
+      // most of the time, Activity Type is the activityText, unless it's a weekly units non-device challenge
+      let activityType = '';
+      if (enableDeviceTracking === 1 && isWeekly === 1) {
+        activityType = '';
+      } else {
+        activityType = activityText;
+      }
+
+      let amountUnit = 'times';
+      switch (enableDeviceTracking) {
+        case 1:
+          if (isWeekly === 0) {
+            amountUnit = 'steps';
+          } else if (isWeekly === 1) {
+            amountUnit = activityText;
+          }
+          break;
+        case 0:
+          amountUnit = 'times';
+          break;
+      }
+
+      // prepping for splitting tags for upload
+      let tagValues1 = [];
+      let tagValues2 = [];
+      let tagValues3 = [];
+
+      // conditionally setting the tags in case there are fewer than 3 targeting columns
+      let tags = [];
+      function makeTags() {
+        field1 ? tags.push({
+          'TagName': field1 ? field1 : '',
+          'TagValues':
+            field1Value ? tagValues1.concat(field1Value.split('|').map(tag => tag.trim())) : '' // splitting tags on the | like Limeade, also trimming out whitespace just in case
+        }) : null;
+        field2 ? tags.push({
+          'TagName': field2 ? field2 : '',
+          'TagValues':
+            field2Value ? tagValues2.concat(field2Value.split('|').map(tag => tag.trim())) : ''
+        }) : null;
+        field3 ? tags.push({
+          'TagName': field3 ? field3 : '',
+          'TagValues':
+            field3Value ? tagValues3.concat(field3Value.split('|').map(tag => tag.trim())) : ''
+        }) : null;
+        return tags;
+      }
+
+      const data = {
+        'AboutChallenge': sanitize(longDescription),
+        'ActivityReward': {
+          'Type': 'IncentivePoints',
+          'Value': pointValue
+        },
+        'ActivityType': activityType, // Activity in csv, except for definition above
+        'AmountUnit': amountUnit,
+        'ButtonText': partnerId === 1 ? 'CLOSE' : '',
+        'ChallengeLogoThumbURL': imageUrl,
+        'ChallengeLogoURL': imageUrl,
+        'ChallengeTarget': challengeTarget, // Target in csv
+        'ChallengeType': challengeType, // ChallengeType in csv
+        'Dimensions': [],
+        'DefaultPrivacyFlag': defaultPrivacy === 0 ? 'Unspecified': 1,
+        'DisplayInProgram': startDate === moment().format('YYYY-MM-DD') ? true : false,  // sets true if the challenge starts today
+        'DisplayPriority': displayPriority,
+        'EndDate': endDate,
+        'EventCode': eventCode,
+        'Frequency': frequency,
+        'IsDeviceEnabled': enableDeviceTracking === 1 ? true : false, // EnableDeviceTracking in csv
+        'IsFeatured': isFeatured === 1 ? true : false, // isFeatured in csv
+        'FeaturedData': {
+          'Description': isFeatured === 1 ? shortDescription : false,
+          'ImageUrl': isFeatured === 1 ? imageUrl : false
+        },
+        'IsSelfReportEnabled': allowSelfReport === 1 ? true : false,
+        'IsTeamChallenge': isTeamChallenge,
+        'Name': title, // ChallengeName in csv
+        'PartnerId': partnerId, // IntegrationPartnerId in csv
+        'ShortDescription': sanitize(shortDescription),
+        'ShowExtendedDescription': partnerId === 1 ? true : false,
+        'ShowWeeklyCalendar': false, // not sure what this does, CTRT has this as false
+        'StartDate': startDate,
+        'TargetUrl': partnerId === 1 ? '/Home?sametab=true' : '',
+        // trying to check for targeting by seeing if there are values in subgroup or field1 name
+        'Targeting': subgroup || field1 ? [
+          {
+            'SubgroupId': subgroup ? subgroup : '0', // if no subgroup, use 0 aka none
+            'Name': '', // let's hope this is optional since How would we know the Subgroup Name?
+            'IsImplicit': field1 ? true : false, // not sure what this does. Seems to be true for tags and false for subgroups.
+            'IsPHI': false,
+            'Tags':
+              field1 ? makeTags() : null
+          }
+        ] : [], // if no targeting, use an empty array
+        'TeamSize': isTeamChallenge === 1 ? { MaxTeamSize: maxTeamSize, MinTeamSize: minTeamSize } : null
+      };
+      console.log('data for upload:', data);
+
+      // upload if heartbeat survey
+      if (surveyId !== '') {
+        $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Uploading...');
+        $.ajax({
+          url: 'https://api.limeade.com/api/admin/activity',
+          type: 'POST',
+          dataType: 'json',
+          data: JSON.stringify(data),
+          headers: {
+            Authorization: 'Bearer ' + client.fields['LimeadeAccessToken']
+          },
+          contentType: 'application/json; charset=utf-8'
+        }).done((result) => {
+          const surveyUrl = `/api/Redirect?url=https%3A%2F%2Fheartbeat.adurolife.com%2Fapp%2Fsurvey%2F%3Fs%3D${surveyId}%26q1%3D${result.Data.ChallengeId}%26q4%3D%5Bparticipantcode%5D%26q5%3D%5Be%5D`;
+          $.ajax({
+            url: 'https://api.limeade.com/api/admin/activity/' + result.Data.ChallengeId,
+            type: 'PUT',
+            dataType: 'json',
+            data: JSON.stringify({
+              'AboutChallenge': longDescription.replace(/\${surveyUrl}/g, surveyUrl) // replaces &{surveyUrl} in file's longDescription (aka MoreInformation)
+            }),
+            headers: {
+              Authorization: 'Bearer ' + client.fields['LimeadeAccessToken']
+            },
+            contentType: 'application/json; charset=utf-8'
+          }).done((result) => {
+            // Change row to green on success (and remove red if present)
+            $('#' + employerName.replace(/\s*/g, '')).removeClass('bg-danger');
+            $('#' + employerName.replace(/\s*/g, '')).addClass('bg-success text-white');
+            $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Success');
+            $('#' + employerName.replace(/\s*/g, '') + ' .challenge-id').html(`<a href="${client.fields['Domain']}/admin/program-designer/activities/activity/${result.Data.ChallengeId}" target="_blank">${result.Data.ChallengeId}</a>`);
+            // upload next challenge in table
+            if (rowId < clientsFromCsv.length-1) {
+              rowId++;
+              massUploadChallenge(rowId);
+            }
+
+          }).fail((request, status, error) => {
+            $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
+            $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Failed: ' + request.responseText);
+            console.error(request.status);
+            console.error(request.responseText);
+            console.log('Update challenge failed for client', client.fields['Limeade e=']);
+            // upload next challenge in table
+            if (rowId < clientsFromCsv.length-1) {
+              rowId++;
+              massUploadChallenge(rowId);
+            }
+
+          });
+
+        }).fail((request, status, error) => {
+          $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
+          $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Failed: ' + request.responseText);
+          console.error(request.status);
+          console.error(request.responseText);
+          console.log('Create challenge failed for client ' + client.fields['Limeade e=']);
+          // upload next challenge in table
+          if (rowId < clientsFromCsv.length-1) {
+            rowId++;
+            massUploadChallenge(rowId);
+          }
+          
+        });
+      } else {
+        // upload when no heartbeat survey
+        $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Uploading...');
+        $.ajax({
+          url: 'https://api.limeade.com/api/admin/activity',
+          type: 'POST',
+          dataType: 'json',
+          data: JSON.stringify(data),
+          headers: {
+            Authorization: 'Bearer ' + client.fields['LimeadeAccessToken']
+          },
+          contentType: 'application/json; charset=utf-8'
+        }).done((result) => {
+
+          // Change row to green on success
+          $('#' + employerName.replace(/\s*/g, '')).removeClass('bg-danger');
+          $('#' + employerName.replace(/\s*/g, '')).addClass('bg-success text-white');
+          $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Success');
+          $('#' + employerName.replace(/\s*/g, '') + ' .challenge-id').html(`<a href="${client.fields['Domain']}/admin/program-designer/activities/activity/${result.Data.ChallengeId}" target="_blank">${result.Data.ChallengeId}</a>`);
+
+          // upload next challenge in table
+          if (rowId < clientsFromCsv.length-1) {
+            rowId++;
+            massUploadChallenge(rowId);
+          }
+
+        }).fail((xhr, request, status, error) => {
+          $('#' + employerName.replace(/\s*/g, '')).addClass('bg-danger text-white');
+          $('#' + employerName.replace(/\s*/g, '') + ' .status').html('Failed: ' + request.responseText);
+          console.error('status: ', request.status);
+          console.error('request: ', request.responseText);
+          console.log('Create challenge failed for client ' + client.fields['Limeade e=']);
+
+          // upload next challenge in table
+          if (rowId < clientsFromCsv.length-1) {
+            rowId++;
+            massUploadChallenge(rowId);
+          }
+
+        });  
+      }
+
+    } // end massUploadChallenge ?
+  } // end massUpload
 
   function uploadChallenge(client) {
     const employerName = client.fields['Limeade e='];
@@ -460,6 +702,12 @@ function App() {
               <small>Note: App will replace {helpMessage} in Long Description HTML with the completed Heartbeat survey URL during upload.</small>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="row mb-1">
+        <div className="col text-right">
+          <button type="button" id="massUploadButton" className="btn btn-primary" onClick={(e) => massUpload(e)}>Mass Upload</button>
         </div>
       </div>
 
