@@ -17,7 +17,7 @@
     "babel-loader": "^8.0.5",
     "webpack": "^5.104.1",
     "webpack-cli": "^3.3.0",
-    "webpack-dev-server": "^5.2.1"
+    "webpack-dev-server": "^5.2.4"
   },
   "dependencies": {
     "airtable": "^0.8.1",
